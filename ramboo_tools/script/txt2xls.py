@@ -24,15 +24,16 @@ from ramboo_tools.stream_processor import StreamProcessor
 
 class TextToXlsStreamProcessor(StreamProcessor):
 
-    def _before_process(self, *objects, **kwargs):
-        if 'output_excel' not in kwargs:
+    def __init__(self):
+        super().__init__()
+        self.output_excel = self.cmd_args.get('output_excel', None)
+        if not self.output_excel:
             raise ValueError('need -o output_excel')
-        self.output_excel = kwargs['output_excel']
         if self.output_excel == sys.stdout:
-            raise TypeError('--output_excel must be file')
+            raise TypeError('--output_excel must be a file')
         if '.xls' not in self.output_excel.name:
             raise ValueError('output exceel file name must be xxx.xls(x)')
-        self.column_name_list = kwargs.get('column_name', [])
+        self.column_name_list = self.cmd_args.get('column_name', [])
         self.data_list = []
 
     def _before_stream_process_rows(self, line, *objects, **kwargs):
@@ -40,7 +41,7 @@ class TextToXlsStreamProcessor(StreamProcessor):
         return line
 
     def stream_process_rows(self, rows=None, *objects, **kwargs):
-        contain_table_head = bool(kwargs.get('table_head', False))
+        contain_table_head = bool(self.cmd_args.get('table_head', False))
         if self.line_count == 1 and contain_table_head and self.column_name_list is None:
             self.column_name_list = rows
             return None
@@ -65,7 +66,7 @@ class TextToXlsStreamProcessor(StreamProcessor):
 
 def main():
     processorObj = TextToXlsStreamProcessor()
-    processorObj.stream_process(**processorObj.get_cmd_args())
+    processorObj.stream_process()
 
 
 if __name__ == '__main__':

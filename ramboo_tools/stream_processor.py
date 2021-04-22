@@ -20,7 +20,7 @@ class StreamProcessor(object):
         """
         初始化
         """
-        pass
+        self.cmd_args = self.get_cmd_args()
 
     def _before_process(self, *objects, **kwargs):
         """
@@ -57,17 +57,16 @@ class StreamProcessor(object):
         return rows
 
     def stream_process(
-        self, input_stream=None, output_stream=None, error_stream=None,
+        self, input_stream=None, output_stream=None,
         separator='\t', encoding='utf-8', keep_input=True,
         *objects, **kwargs
     ):
         """
         流式处理
         从input_stream中读取数据，通过separator分割为rows，调用stream_process_rows()方法处理，得到的结果写入output_stream
-        error_stream: 输出错误消息
         keep_input: 是否在输出流中保留输入数据（保留时，每行处理结果将会附加在末尾列）
         encoding: I/O编码，默认utf-8
-        *objects, **kwargs: 接收其余参数，透传至stream_process_rows()方法
+        *objects, **kwargs: 接收其余参数，透传至内部处理方法
         """
         close_file_list = []
         self.input_stream, close_input = util.get_file_obj(input_stream, 'r', sys.stdin)
@@ -76,9 +75,7 @@ class StreamProcessor(object):
         self.output_stream, close_output = util.get_file_obj(output_stream, 'w', sys.stdout)
         if close_output:
             close_file_list.append(self.output_stream)
-        self.error_stream, close_error = util.get_file_obj(error_stream, 'w', sys.stderr)
-        if close_error:
-            close_file_list.append(self.error_stream)
+
         self.keep_input = keep_input
 
         self._before_process(*objects, **kwargs)
@@ -99,11 +96,7 @@ class StreamProcessor(object):
                 output_rows.extend(res)
                 print(*output_rows, sep=separator, encoding=encoding, file=self.output_stream)
             except Exception as error:
-                print(
-                    "line_no[%s]" % self.line_count, "line[%s]" % line.strip('\n'),
-                    util.get_error_message(error), file=self.error_stream
-                )
-                logging.exception(error, exc_info=True)
+                logging.exception(error)
                 continue
         self._after_process(*objects, **kwargs)
         for file_to_close in close_file_list:
@@ -125,8 +118,6 @@ class StreamProcessor(object):
             '--input_stream', default=sys.stdin, type=argparse.FileType('r'), help='input file/stream')
         parser.add_argument(
             '--output_stream', default=sys.stdout, type=argparse.FileType('w'), help='output file/stream')
-        parser.add_argument(
-            '--error_stream', default=sys.stderr, type=argparse.FileType('w'), help='error file/stream')
         parser.add_argument(
             '--seperator', default='\t', help=r'i/o rows seperator, \t default')
         parser.add_argument('-ut', '--unittest', action='store_true', help='unit test')

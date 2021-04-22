@@ -21,12 +21,13 @@ import pandas
 from ramboo_tools.stream_processor import StreamProcessor
 
 
-class TextToXlsStreamProcessor(StreamProcessor):
+class XlsToTextStreamProcessor(StreamProcessor):
 
-    def _before_process(self, *objects, **kwargs):
-        if 'input_excel' not in kwargs:
+    def __init__(self):
+        super().__init__()
+        self.input_excel = self.cmd_args.get('input_excel', None)
+        if not self.input_excel:
             raise ValueError('need -o input_excel')
-        self.input_excel = kwargs['input_excel']
         if self.input_excel == sys.stdin:
             raise TypeError('--input_excel must be file')
         if '.xls' not in self.input_excel.name:
@@ -41,10 +42,6 @@ class TextToXlsStreamProcessor(StreamProcessor):
     def stream_process_rows(self, rows=None, *objects, **kwargs):
         rows = [row.replace('\n', r'\n').replace('\t', r'\t') if isinstance(row, str) else row for row in rows]
         rows = [six.ensure_text(str(row)) for row in rows]
-        print(rows)
-        print(type(rows))
-        print(rows[0])
-        print(type(rows[0]))
         return rows
 
     def _add_cmd_args(self, parser):
@@ -53,8 +50,8 @@ class TextToXlsStreamProcessor(StreamProcessor):
 
 
 def main():
-    processorObj = TextToXlsStreamProcessor()
-    processorObj.stream_process(**processorObj.get_cmd_args())
+    processorObj = XlsToTextStreamProcessor()
+    processorObj.stream_process()
 
 
 if __name__ == '__main__':

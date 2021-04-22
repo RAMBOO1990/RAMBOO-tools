@@ -24,8 +24,9 @@ from ramboo_tools.stream_processor import StreamProcessor
 
 class CsvToTextStreamProcessor(StreamProcessor):
 
-    def _before_process(self, *objects, **kwargs):
-        csv_delimiter = kwargs.get('csv_delimiter', ',')
+    def __init__(self):
+        super().__init__()
+        csv_delimiter = self.cmd_args.get('csv_delimiter', ',')
         self.input_stream = csv.reader(
             io.TextIOWrapper(sys.stdin.buffer, encoding='gbk'),
             delimiter=csv_delimiter
