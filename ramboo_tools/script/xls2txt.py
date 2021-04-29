@@ -39,7 +39,7 @@ class XlsToTextStreamProcessor(StreamProcessor):
     def _get_rows_from_line(self, line, separator, encoding, *objects, **kwargs):
         return line
 
-    def stream_process_rows(self, rows=None, *objects, **kwargs):
+    def rows_process(self, rows=None, *objects, **kwargs):
         rows = [row.replace('\n', r'\n').replace('\t', r'\t') if isinstance(row, str) else row for row in rows]
         rows = [six.ensure_text(str(row)) for row in rows]
         return rows

@@ -40,7 +40,7 @@ class TextMatch(stream_processor.StreamProcessor):
                 keyword_list.append(keyword)
                 self.dm.add(subword, ext_info=keyword_list)
 
-    def stream_process_rows(self, rows=None, *objects, **kwargs):
+    def rows_process(self, rows=None, *objects, **kwargs):
         """
         处理输入流的一行数据，将会被stream_process()方法调用，返回结果将输出至输出流
         rows: 接收输入流的一行数据

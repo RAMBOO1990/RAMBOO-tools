@@ -40,7 +40,7 @@ class StreamProcessor(object):
         """
         return line
 
-    def stream_process_rows(self, rows=None, *objects, **kwargs):
+    def rows_process(self, rows=None, *objects, **kwargs):
         """
         处理输入流的一行数据，将会被stream_process()方法调用，返回结果将输出至输出流
         rows: 接收输入流的一行数据
@@ -87,7 +87,7 @@ class StreamProcessor(object):
                 self.line_count += 1
                 line = self._before_stream_process_rows(line, *objects, **kwargs)
                 rows = self._get_rows_from_line(line, separator, encoding, *objects, **kwargs)
-                res = self.stream_process_rows(rows, *objects, **kwargs)
+                res = self.rows_process(rows, *objects, **kwargs)
                 if res is None:
                     continue
                 if not isinstance(res, (list, tuple)):

@@ -55,7 +55,7 @@ class ModelTest(stream_processor.StreamProcessor):
             )
             print(report, file=self.output_stream)
 
-    def stream_process_rows(self, rows, *objects, **kwargs):
+    def rows_process(self, rows, *objects, **kwargs):
         """
         处理输入流的一行数据，将会被stream_process()方法调用，返回结果将输出至输出流
         rows: 接收输入流的一行数据

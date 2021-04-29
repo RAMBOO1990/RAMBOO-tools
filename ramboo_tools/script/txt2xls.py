@@ -40,7 +40,7 @@ class TextToXlsStreamProcessor(StreamProcessor):
         line = ILLEGAL_CHARACTERS_RE.sub('', line)
         return line
 
-    def stream_process_rows(self, rows=None, *objects, **kwargs):
+    def def rows_process(self, rows=None, *objects, **kwargs):
         contain_table_head = bool(self.cmd_args.get('table_head', False))
         if self.line_count == 1 and contain_table_head and self.column_name_list is None:
             self.column_name_list = rows
