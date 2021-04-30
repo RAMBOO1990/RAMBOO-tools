@@ -115,7 +115,7 @@ class StreamProcessor(object):
         获取并转换命令行参数
         """
         parser = argparse.ArgumentParser(
-            description='input cluster id then get feature')
+            description='stream processor')
         parser.add_argument(
             '--input_stream', default=sys.stdin, type=argparse.FileType('r'), help='input file/stream')
         parser.add_argument(
@@ -124,7 +124,7 @@ class StreamProcessor(object):
             '--seperator', default='\t', help=r'i/o rows seperator, \t default')
         parser.add_argument('-ut', '--unittest', action='store_true', help='unit test')
         parser.add_argument(
-            '-crn', '--content_row_num', default=1, type=int, help='input content row number, 1 default')
+            '-f', '--field_num', default=1, type=int, help='input content row number, 1 default')
         self._add_cmd_args(parser)
 
         args = parser.parse_args()
