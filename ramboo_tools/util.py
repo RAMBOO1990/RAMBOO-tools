@@ -173,6 +173,7 @@ def liner_normalize(x, min_num=0, max_num=sys.float_info.max):
 def get_error_message(error):
     """
     获取错误消息和堆栈纪录
+    逐步弃用，建议使用：logging.exception(error)
     """
     import traceback
     exc = six.ensure_text(traceback.format_exc())
@@ -188,23 +189,23 @@ def get_error_message(error):
 def retry_func(retry_num=3, delay_seconds=1):
     """
     重试函数
-    :param retry_num: 重试次数
-    :param delay_seconds: 间隔秒数
-    :return:
+    @param retry_num: 重试次数
+    @param delay_seconds: 间隔秒数
+    @return:
     """
     def decorator(func):
         """
         装饰器
-        :param func:
-        :return:
+        @param func:
+        @return:
         """
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             """
             wrapper
-            :param args:
-            :param kwargs:
-            :return:
+            @param args:
+            @param kwargs:
+            @return:
             """
             for i in range(retry_num):
                 try:
@@ -222,30 +223,30 @@ def retry_func(retry_num=3, delay_seconds=1):
 def delay_qps_func(qps):
     """
     按照qps延迟函数
-    :param qps:
-    :return:
+    @param qps:控制qps上限
+    @return:
     """
     interval = 1. / qps
 
     def decorator(func):
         """
         装饰器
-        :param func:
-        :return:
+        @param func:
+        @return:
         """
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             """
             wrapper
-            :param args:
-            :param kwargs:
-            :return:
+            @param args:
+            @param kwargs:
+            @return:
             """
             time_begin = time.time()
             try:
                 ret = func(*args, **kwargs)
             except Exception as error:
-                raise error
+                raise
             else:
                 return ret
             finally:
@@ -254,5 +255,40 @@ def delay_qps_func(qps):
                     pass
                 else:
                     time.sleep(interval - (time_end - time_begin))
+        return wrapper
+    return decorator
+
+
+def time_log_func(level=logging.DEBUG):
+    """
+    耗时日志函数
+    @param level:日志级别
+    @return:
+    """
+
+    def decorator(func):
+        """
+        装饰器
+        @param func:
+        @return:
+        """
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            """
+            wrapper
+            @param args:
+            @param kwargs:
+            @return:
+            """
+            time_begin = time.time()
+            try:
+                ret = func(*args, **kwargs)
+            except Exception as error:
+                raise
+            else:
+                return ret
+            finally:
+                time_end = time.time()
+                logging.log(level, f'{func.__name__} costtime[{1000*(time_end-time_begin)}]ms')
         return wrapper
     return decorator
