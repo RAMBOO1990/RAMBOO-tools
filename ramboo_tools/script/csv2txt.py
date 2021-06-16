@@ -25,29 +25,42 @@ class CsvToTextStreamProcessor(StreamProcessor):
 
     def __init__(self):
         super().__init__()
-        self.keep_input = False
+
+    keep_input_rows = False
 
     def _before_process(self, *objects, **kwargs):
         csv_delimiter = self.cmd_args.get('csv_delimiter', ',')
         csv_encoding = self.cmd_args.get('csv_encoding', 'gbk')
+        self.dialect = self.cmd_args.get('format')
+        if self.dialect == 'auto':
+            self.dialect = csv.Sniffer().sniff(self.input_stream.read(1024))
+            self.input_stream.seek(0)
         self.input_stream = csv.reader(
             io.TextIOWrapper(self.input_stream.buffer, encoding=csv_encoding),
             delimiter=csv_delimiter
         )
 
-    def _get_rows_from_line(self, line, separator, encoding, *objects, **kwargs):
-        return line
+    def convert(self, text):
+        for str1, str2 in [
+            ('\\', '\\\\'),
+            ('\t', r'\t'),
+            ('\r\n', r'\n'),
+            ('\n', r'\n'),
+        ]:
+            text = text.replace(str1, str2)
+        return text
 
     def rows_process(self, rows=None, *objects, **kwargs):
-        if self.input_stream.line_num == 1:
-            return None
-        if six.PY2:
-            rows = [six.ensure_str(rows) for row in rows]
+        rows = list(map(self.convert, rows))
+        rows = list(map(six.ensure_text, rows))
         return rows
 
     def _add_cmd_args(self, parser):
         parser.add_argument('-d', '--csv_delimiter', default=',', type=str, help='input csv delimiter')
         parser.add_argument('-e', '--csv_encoding', default='gbk', type=str, help='input csv encoding, gbk defalut')
+        parser.add_argument('--format', default='unix', type=str,
+                            help='csv format: ' + '/'.join(csv.list_dialects()+['auto']) + ', unix default. '
+                            '"auto" only available using file input')
 
 
 def main():

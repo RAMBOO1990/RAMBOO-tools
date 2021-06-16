@@ -36,17 +36,17 @@ class TextToXlsStreamProcessor(StreamProcessor):
         self.column_name_list = self.cmd_args.get('column_name', [])
         self.data_list = []
 
-    def _before_stream_process_rows(self, line, *objects, **kwargs):
+    def line_process(self, line, *args, **kwargs):
         line = ILLEGAL_CHARACTERS_RE.sub('', line)
-        return line
+        return super().line_process(line, *args, **kwargs)
 
-    def def rows_process(self, rows=None, *objects, **kwargs):
+    def rows_process(self, rows=None, *objects, **kwargs):
         contain_table_head = bool(self.cmd_args.get('table_head', False))
         if self.line_count == 1 and contain_table_head and self.column_name_list is None:
             self.column_name_list = rows
             return None
         if six.PY2:
-            rows = [six.ensure_str(rows) for row in rows]
+            rows = list(map(six.ensure_str, rows))
         self.data_list.append(rows)
         return None
 

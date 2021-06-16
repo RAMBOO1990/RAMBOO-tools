@@ -36,12 +36,21 @@ class XlsToTextStreamProcessor(StreamProcessor):
         data_frame.fillna('', inplace=True)
         self.input_stream = data_frame.to_records(index=False)
 
-    def _get_rows_from_line(self, line, separator, encoding, *objects, **kwargs):
-        return line
+    def convert(self, text):
+        for str1, str2 in [
+            ('\\', '\\\\'),
+            ('\t', r'\t'),
+            ('\r\n', r'\n'),
+            ('\n', r'\n'),
+        ]:
+            text = text.replace(str1, str2)
+        return text
 
     def rows_process(self, rows=None, *objects, **kwargs):
-        rows = [row.replace('\n', r'\n').replace('\t', r'\t') if isinstance(row, str) else row for row in rows]
-        rows = [six.ensure_text(str(row)) for row in rows]
+        # rows = [row.replace('\n', r'\n').replace('\t', r'\t') if isinstance(row, str) else row for row in rows]
+        rows = list(map(self.convert, rows))
+        # rows = list(map(str, rows))
+        rows = list(map(six.ensure_text, rows))
         return rows
 
     def _add_cmd_args(self, parser):
