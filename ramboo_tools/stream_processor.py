@@ -27,12 +27,14 @@ class StreamProcessor(object):
         self.separator = self.cmd_args.get('separator', '\t')
         self.encoding = self.cmd_args.get('encoding', 'utf-8')
 
-    # 行处理异常是否中断流处理(True: 结束流处理 / False:跳过该行)
+    # 行处理异常是否中断流处理(False时跳过该行，但不输出)
     raise_stream_error = False
-    # 列处理异常是否中断行处理(True: 抛出异常根据raise_stream_error处理 / False:输出列处理结果默认值rows_result_default)
+    # 列处理异常是否中断行处理(False时输出列处理结果默认值rows_result_default)
     raise_line_error = False
     # 列处理结果默认值
-    rows_result_default = '-'
+    rows_result_default = ['-']
+    # 输出列宽，结果将padding&裁剪至固定列宽，0表示不调整
+    fixed_column_width = 1
     # 是否保留原始输入列
     keep_input_rows = True
 
@@ -58,7 +60,7 @@ class StreamProcessor(object):
         rows = line.split(self.separator)
         return rows
 
-    def rows_process(self, rows=None, *args, **kwargs):
+    def rows_process(self, rows, *args, **kwargs):
         """
         处理输入流一行的各列数据，返回结果将输出至输出流
         rows: 接收输入流一行的各列数据
@@ -83,12 +85,14 @@ class StreamProcessor(object):
             if self.raise_line_error:
                 raise
             else:
-                res = self.rows_result_default
-        else:
-            if res is None:
-                return
+                res = []
+        if res is None:
+            return
         if not isinstance(res, (list, tuple)):
             res = [res]
+        if self.fixed_column_width > 0:
+            temp = res + self.rows_result_default * self.fixed_column_width
+            res = temp[:self.fixed_column_width]
         output_rows = rows if self.keep_input_rows else []
         output_rows.extend(res)
         print(*output_rows, sep=self.separator, encoding=self.encoding, file=self.output_stream)
