@@ -21,86 +21,108 @@ class StreamProcessor(object):
         初始化
         """
         self.cmd_args = self.get_cmd_args()
-        self.need_split_line = True
+        self.is_unit_test = self.cmd_args.get('unittest', False)
+        self.input_stream = self.cmd_args.get('input_stream', sys.stdin)
+        self.output_stream = self.cmd_args.get('output_stream', sys.stdout)
+        self.separator = self.cmd_args.get('separator', '\t')
+        self.encoding = self.cmd_args.get('encoding', 'utf-8')
 
-    def _before_process(self, *objects, **kwargs):
+    # 行处理异常是否中断流处理(True: 结束流处理 / False:跳过该行)
+    raise_stream_error = False
+    # 列处理异常是否中断行处理(True: 抛出异常根据raise_stream_error处理 / False:输出列处理结果默认值rows_result_default)
+    raise_line_error = False
+    # 列处理结果默认值
+    rows_result_default = '-'
+    # 是否保留原始输入列
+    keep_input_rows = True
+
+    def _before_process(self, *args, **kwargs):
         """
         前置钩子
         """
         pass
 
-    def _after_process(self, *objects, **kwargs):
+    def _after_process(self, *args, **kwargs):
         """
         后置钩子
         """
         pass
 
-    def _before_stream_process_rows(self, line, *objects, **kwargs):
-        """
-        行处理前置钩子
-        """
-        return line
-
-    def _get_rows_from_line(self, line, separator, encoding, *objects, **kwargs):
+    def _get_rows_from_line(self, line, *args, **kwargs):
         """
         从line获取rows
         """
-        line = six.ensure_text(line, encoding=encoding).strip('\n')
-        rows = line.split(separator)
+        if isinstance(line, (list, tuple)):
+            return line
+        line = six.ensure_text(line, encoding=self.encoding).strip('\n')
+        rows = line.split(self.separator)
         return rows
 
-    def rows_process(self, rows=None, *objects, **kwargs):
+    def rows_process(self, rows=None, *args, **kwargs):
         """
-        处理输入流的一行数据，将会被stream_process()方法调用，返回结果将输出至输出流
-        rows: 接收输入流的一行数据
-        *objects, **kwargs: 接受其余参数
+        处理输入流一行的各列数据，返回结果将输出至输出流
+        rows: 接收输入流一行的各列数据
+        *args, **kwargs: 接受其余参数
         """
         raise NotImplementedError('StreamProcessor基类方法，需子类继承StreamProcessor后实现')
 
-    def stream_process(
-        self, input_stream=None, output_stream=None,
-        separator='\t', encoding='utf-8', keep_input=True,
-        *objects, **kwargs
-    ):
+    def line_process(self, line, *args, **kwargs):
+        """
+        输入流一行数据才分为列数据，调用rows_process()处理，输出至输出流
+        line: 接收输入流一行数据
+        *args, **kwargs: 接受其余参数
+        """
+        if not line:
+            raise ValueError(f'empty line[{line}]')
+        self.line_count += 1
+        rows = self._get_rows_from_line(line, *args, **kwargs)
+        try:
+            res = self.rows_process(rows, *args, **kwargs)
+        except Exception as error:
+            logging.exception(f'rows:{rows} error[{error}]')
+            if self.raise_line_error:
+                raise
+            else:
+                res = self.rows_result_default
+        else:
+            if res is None:
+                return
+        if not isinstance(res, (list, tuple)):
+            res = [res]
+        output_rows = rows if self.keep_input_rows else []
+        output_rows.extend(res)
+        print(*output_rows, sep=self.separator, encoding=self.encoding, file=self.output_stream)
+
+    def stream_process(self, *args, **kwargs):
         """
         流式处理
-        从input_stream中读取数据，通过separator分割为rows，调用stream_process_rows()方法处理，得到的结果写入output_stream
-        keep_input: 是否在输出流中保留输入数据（保留时，每行处理结果将会附加在末尾列）
-        encoding: I/O编码，默认utf-8
-        *objects, **kwargs: 接收其余参数，透传至内部处理方法
+        从输入流读取数据，调用line_process()方法进行行处理
+        *args, **kwargs: 接收其余参数，透传至内部处理方法
         """
         close_file_list = []
-        self.input_stream, close_input = util.get_file_obj(input_stream, 'r', sys.stdin)
-        if close_input:
-            close_file_list.append(self.input_stream)
-        self.output_stream, close_output = util.get_file_obj(output_stream, 'w', sys.stdout)
-        if close_output:
-            close_file_list.append(self.output_stream)
+        if self.is_unit_test:
+            self.input_stream = self.unittest_text_list
+            self.output_stream = sys.stdout
+        else:
+            self.input_stream, close_input = util.get_file_obj(self.input_stream, 'r', sys.stdin)
+            if close_input:
+                close_file_list.append(self.input_stream)
+            self.output_stream, close_output = util.get_file_obj(self.output_stream, 'w', sys.stdout)
+            if close_output:
+                close_file_list.append(self.output_stream)
 
-        self.keep_input = keep_input
-
-        self._before_process(*objects, **kwargs)
+        self._before_process(*args, **kwargs)
         self.line_count = 0
         for line in self.input_stream:
             try:
-                if not line:
-                    continue
-                self.line_count += 1
-                line = self._before_stream_process_rows(line, *objects, **kwargs)
-                if self.need_split_line:
-                    rows = self._get_rows_from_line(line, separator, encoding, *objects, **kwargs)
-                res = self.rows_process(rows, *objects, **kwargs)
-                if res is None:
-                    continue
-                if not isinstance(res, (list, tuple)):
-                    res = [res]
-                output_rows = rows if self.keep_input else []
-                output_rows.extend(res)
-                print(*output_rows, sep=separator, encoding=encoding, file=self.output_stream)
+                self.line_process(line, *args, **kwargs)
             except Exception as error:
-                logging.exception(error)
-                continue
-        self._after_process(*objects, **kwargs)
+                logging.exception(f'line_no[{self.line_count}] line:{line} error[{error}]')
+                if self.raise_stream_error:
+                    raise
+                else:
+                    continue
+        self._after_process(*args, **kwargs)
         for file_to_close in close_file_list:
             file_to_close.close()
 
@@ -117,11 +139,11 @@ class StreamProcessor(object):
         parser = argparse.ArgumentParser(
             description='stream processor')
         parser.add_argument(
-            '--input_stream', default=sys.stdin, type=argparse.FileType('r'), help='input file/stream')
+            '-input', '--input_stream', default=sys.stdin, type=argparse.FileType('r'), help='input file/stream')
         parser.add_argument(
-            '--output_stream', default=sys.stdout, type=argparse.FileType('w'), help='output file/stream')
+            '-output' '--output_stream', default=sys.stdout, type=argparse.FileType('w'), help='output file/stream')
         parser.add_argument(
-            '--seperator', default='\t', help=r'i/o rows seperator, \t default')
+            '-sep', '--seperator', default='\t', help=r'i/o rows seperator, \t default')
         parser.add_argument('-ut', '--unittest', action='store_true', help='unit test')
         parser.add_argument(
             '-f', '--field_num', default=1, type=int, help='input content row number, 1 default')
@@ -142,9 +164,9 @@ class StreamProcessor(object):
             r'unittest_text_list用于提供单元测试数据，子类可覆盖该方法提供测试数据'
         ]
 
-    def unittest(self, *objects, **kwargs):
+    def unittest(self, *args, **kwargs):
         """
         单元测试
         """
         text_list = [six.ensure_binary(text, encoding='utf-8') for text in self.unittest_text_list]
-        self.stream_process(text_list, *objects, **kwargs)
+        self.stream_process(text_list, *args, **kwargs)
