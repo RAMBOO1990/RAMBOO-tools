@@ -91,7 +91,9 @@ class StreamProcessor(object):
         if not isinstance(res, (list, tuple)):
             res = [res]
         if self.fixed_column_width > 0:
-            temp = res + self.rows_result_default * self.fixed_column_width
+            if len(res) != self.fixed_column_width:
+                logging.debug(f'padding & fix result width from[{len(res)}] to[{self.fixed_column_width}]')
+            temp = list(res) + self.rows_result_default * self.fixed_column_width
             res = temp[:self.fixed_column_width]
         output_rows = rows if self.keep_input_rows else []
         output_rows.extend(res)
