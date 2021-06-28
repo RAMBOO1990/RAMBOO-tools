@@ -176,6 +176,7 @@ def get_error_message(error):
     逐步弃用，建议使用：logging.exception(error)
     """
     import traceback
+
     exc = six.ensure_text(traceback.format_exc())
     error_msg = getattr(error, 'message', '')
     if error_msg == '':
@@ -193,12 +194,14 @@ def retry_func(retry_num=3, delay_seconds=1):
     @param delay_seconds: 间隔秒数
     @return:
     """
+
     def decorator(func):
         """
         装饰器
         @param func:
         @return:
         """
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             """
@@ -216,7 +219,9 @@ def retry_func(retry_num=3, delay_seconds=1):
                 else:
                     return ret
             raise RuntimeError('max retry limit')
+
         return wrapper
+
     return decorator
 
 
@@ -226,7 +231,7 @@ def delay_qps_func(qps):
     @param qps:控制qps上限
     @return:
     """
-    interval = 1. / qps
+    interval = 1.0 / qps
 
     def decorator(func):
         """
@@ -234,6 +239,7 @@ def delay_qps_func(qps):
         @param func:
         @return:
         """
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             """
@@ -255,7 +261,9 @@ def delay_qps_func(qps):
                     pass
                 else:
                     time.sleep(interval - (time_end - time_begin))
+
         return wrapper
+
     return decorator
 
 
@@ -272,6 +280,7 @@ def time_log_func(level=logging.DEBUG):
         @param func:
         @return:
         """
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             """
@@ -290,5 +299,7 @@ def time_log_func(level=logging.DEBUG):
             finally:
                 time_end = time.time()
                 logging.log(level, f'{func.__name__} costtime[{1000*(time_end-time_begin)}]ms')
+
         return wrapper
+
     return decorator

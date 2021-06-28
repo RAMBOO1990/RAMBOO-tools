@@ -26,6 +26,8 @@ class StreamProcessor(object):
         self.output_stream = self.cmd_args.get('output_stream', sys.stdout)
         self.separator = self.cmd_args.get('separator', '\t')
         self.encoding = self.cmd_args.get('encoding', 'utf-8')
+        if 'skip_err_line' in self.cmd_args:
+            self.raise_line_error = self.cmd_args['skip_err_line']
 
     # 行处理异常是否中断流处理(False时跳过该行，但不输出)
     raise_stream_error = False
@@ -94,7 +96,7 @@ class StreamProcessor(object):
             if len(res) != self.fixed_column_width:
                 logging.debug(f'padding & fix result width from[{len(res)}] to[{self.fixed_column_width}]')
             temp = list(res) + self.rows_result_default * self.fixed_column_width
-            res = temp[:self.fixed_column_width]
+            res = temp[: self.fixed_column_width]
         output_rows = rows if self.keep_input_rows else []
         output_rows.extend(res)
         print(*output_rows, sep=self.separator, encoding=self.encoding, file=self.output_stream)
@@ -142,17 +144,13 @@ class StreamProcessor(object):
         """
         获取并转换命令行参数
         """
-        parser = argparse.ArgumentParser(
-            description='stream processor')
-        parser.add_argument(
-            '-input', '--input_stream', default=sys.stdin, type=argparse.FileType('r'), help='input file/stream')
-        parser.add_argument(
-            '-output' '--output_stream', default=sys.stdout, type=argparse.FileType('w'), help='output file/stream')
-        parser.add_argument(
-            '-sep', '--seperator', default='\t', help=r'i/o rows seperator, \t default')
+        parser = argparse.ArgumentParser(description='stream processor')
+        parser.add_argument('-input', '--input_stream', default=sys.stdin, type=argparse.FileType('r'), help='input file/stream')
+        parser.add_argument('-output' '--output_stream', default=sys.stdout, type=argparse.FileType('w'), help='output file/stream')
+        parser.add_argument('-sep', '--seperator', default='\t', help=r'i/o rows seperator, \t default')
         parser.add_argument('-ut', '--unittest', action='store_true', help='unit test')
-        parser.add_argument(
-            '-f', '--field_num', default=1, type=int, help='input content row number, 1 default')
+        parser.add_argument('-f', '--field_num', default=1, type=int, help='input content row number, 1 default')
+        parser.add_argument('--skip_err_line', action='store_true', help='True: skip error line, False[default]: output "-"')
         self._add_cmd_args(parser)
 
         args = parser.parse_args()
@@ -164,11 +162,7 @@ class StreamProcessor(object):
         """
         提供单元测试数据
         """
-        return [
-            r'hello world',
-            r'单元测试',
-            r'unittest_text_list用于提供单元测试数据，子类可覆盖该方法提供测试数据'
-        ]
+        return [r'hello world', r'单元测试', r'unittest_text_list用于提供单元测试数据，子类可覆盖该方法提供测试数据']
 
     def unittest(self, *args, **kwargs):
         """

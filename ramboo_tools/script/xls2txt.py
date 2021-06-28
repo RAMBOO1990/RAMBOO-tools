@@ -22,6 +22,10 @@ from ramboo_tools.stream_processor import StreamProcessor
 
 
 class XlsToTextStreamProcessor(StreamProcessor):
+    # 关闭输入保留
+    keep_input_rows = False
+    # 关闭固定列宽
+    fixed_column_width = -1
 
     def __init__(self):
         super().__init__()
@@ -55,6 +59,7 @@ class XlsToTextStreamProcessor(StreamProcessor):
 
     def _add_cmd_args(self, parser):
         import argparse
+
         parser.add_argument('-i', '--input_excel', required=True, type=argparse.FileType('r'), help='input excel file')
 
 

@@ -16,15 +16,14 @@ import sys
 import json
 
 # 内部库
-from feed_antispam_lib.util import print
-from feed_antispam_lib import util
-from feed_antispam_lib import global_data
-from feed_antispam_lib import stream_processor
-from feed_antispam_lib import dictmatch
-from feed_antispam_lib import load_dict
+from ramboo_tools.util import print
+from ramboo_tools import global_data
+from ramboo_tools.stream_processor import StreamProcessor
+from ramboo_tools import dictmatch
+from ramboo_tools import load_dict
 
 
-class TextMatch(stream_processor.StreamProcessor):
+class TextMatch(StreamProcessor):
     """文本匹配，支持多词匹配，基于dictmatch"""
 
     def __init__(self, dict_path, subword_seperator='&', quick_match=False):
@@ -113,6 +112,7 @@ def main():
     主程序
     """
     import argparse
+
     parser = argparse.ArgumentParser(description='文本匹配，支持多词匹配')
     parser.add_argument('-i', '--input', default=sys.stdin, help='input file name')
     parser.add_argument('-o', '--output', default=sys.stdout, help='output file name')
@@ -122,9 +122,7 @@ def main():
     parser.add_argument('-crn', '--content_row_num', default=1, help='content row num, start at 1')
     parser.add_argument('-quick', '--quick_match', action='store_true', help='quick match mode, display 1st match keyword only')
     parser.add_argument('-d', '--dict', help='keyword dict, 1 keyword per line')
-    parser.add_argument('-ol', '--output_line', default='match', help=(
-        'match[default] : output only match lines; all : output all lines'
-    ))
+    parser.add_argument('-ol', '--output_line', default='match', help=('match[default] : output only match lines; all : output all lines'))
     args = parser.parse_args()
 
     textMatchObj = TextMatch(dict_path=args.dict, subword_seperator=args.subword_seperator, quick_match=args.quick_match)
@@ -133,9 +131,14 @@ def main():
         textMatchObj.unittest()
     else:
         textMatchObj.stream_process(
-            args.input, args.output, separator=args.separator, keep_input=True,
-            content_row_num=int(args.content_row_num), output_line=args.output_line
+            args.input,
+            args.output,
+            separator=args.separator,
+            keep_input=True,
+            content_row_num=int(args.content_row_num),
+            output_line=args.output_line,
         )
+
 
 if __name__ == '__main__':
     main()

@@ -12,30 +12,21 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 import io
-
-# 第三方库
-import six
 import csv
 
 # 内部库
 from ramboo_tools.stream_processor import StreamProcessor
 
 
-class CsvToTextStreamProcessor(StreamProcessor):
-    # 关闭输入保留
-    keep_input_rows = False
-    # 关闭固定列宽
-    fixed_column_width = -1
-
+class TextToCsvStreamProcessor(StreamProcessor):
     def __init__(self):
         super().__init__()
         csv_delimiter = self.cmd_args.get('csv_delimiter', ',')
         csv_encoding = self.cmd_args.get('csv_encoding', 'utf-8')
         dialect = self.cmd_args.get('format', 'unix')
-        if dialect == 'auto':
-            dialect = csv.Sniffer().sniff(self.input_stream.read(1024))
-            self.input_stream.seek(0)
-        self.input_stream = csv.reader(io.TextIOWrapper(self.input_stream.buffer, encoding=csv_encoding), delimiter=csv_delimiter, dialect=dialect)
+        self.csv_writer = csv.writer(io.TextIOWrapper(self.output_stream.buffer, encoding=csv_encoding), delimiter=csv_delimiter, dialect=dialect)
+
+    keep_input_rows = False
 
     def _add_cmd_args(self, parser):
         parser.add_argument('-d', '--csv_delimiter', default=',', type=str, help='input csv delimiter')
@@ -44,27 +35,22 @@ class CsvToTextStreamProcessor(StreamProcessor):
             '--format',
             default='unix',
             type=str,
-            help='csv format: ' + '/'.join(csv.list_dialects() + ['auto']) + ', unix default. "auto" only available using file input',
+            help='csv format: ' + '/'.join(csv.list_dialects() + ['auto']) + ', unix default. ' '"auto" only available using file input',
         )
+        parser.add_argument('-c', '--column_name', action='append', help='add table header column names (append)')
 
-    def _convert(self, text):
-        for str1, str2 in [
-            ('\\', '\\\\'),
-            ('\t', r'\t'),
-            ('\r\n', r'\n'),
-            ('\n', r'\n'),
-        ]:
-            text = text.replace(str1, str2)
-        return text
+    def _before_process(self, *objects, **kwargs):
+        header = self.cmd_args.get('column_name')
+        if header:
+            self.csv_writer.writerow(header)
 
-    def rows_process(self, rows=None, *objects, **kwargs):
-        rows = list(map(self._convert, rows))
-        rows = list(map(six.ensure_text, rows))
-        return rows
+    def rows_process(self, rows, *objects, **kwargs):
+        self.csv_writer.writerow(rows)
+        return None
 
 
 def main():
-    processorObj = CsvToTextStreamProcessor()
+    processorObj = TextToCsvStreamProcessor()
     processorObj.stream_process(**processorObj.get_cmd_args())
 
 
