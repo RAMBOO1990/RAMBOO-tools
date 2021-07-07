@@ -26,13 +26,14 @@ class StreamProcessor(object):
         self.output_stream = self.cmd_args.get('output_stream', sys.stdout)
         self.separator = self.cmd_args.get('separator', '\t')
         self.encoding = self.cmd_args.get('encoding', 'utf-8')
-        if 'skip_err_line' in self.cmd_args:
-            self.raise_line_error = self.cmd_args['skip_err_line']
+        if self.cmd_args.get('skip_err_line', False):
+            self.raise_line_error = True
+            self.raise_row_error = True
 
-    # 行处理异常是否中断流处理(False时跳过该行，但不输出)
-    raise_stream_error = False
-    # 列处理异常是否中断行处理(False时输出列处理结果默认值rows_result_default)
+    # 行处理异常是否中断流处理(False时跳过该行，但不输出)，需要raise_row_error=Ture时生效
     raise_line_error = False
+    # 列处理异常是否中断行处理(False时输出列处理结果默认值: rows_result_default * fixed_column_width)
+    raise_row_error = False
     # 列处理结果默认值
     rows_result_default = ['-']
     # 输出列宽，结果将padding&裁剪至固定列宽，0表示不调整
@@ -84,7 +85,7 @@ class StreamProcessor(object):
             res = self.rows_process(rows, *args, **kwargs)
         except Exception as error:
             logging.exception(f'rows:{rows} error[{error}]')
-            if self.raise_line_error:
+            if self.raise_row_error:
                 raise
             else:
                 res = []
@@ -126,7 +127,7 @@ class StreamProcessor(object):
                 self.line_process(line, *args, **kwargs)
             except Exception as error:
                 logging.exception(f'line_no[{self.line_count}] line:{line} error[{error}]')
-                if self.raise_stream_error:
+                if self.raise_line_error:
                     raise
                 else:
                     continue
