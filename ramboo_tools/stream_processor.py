@@ -150,7 +150,7 @@ class StreamProcessor(object):
         parser.add_argument('-output' '--output_stream', default=sys.stdout, type=argparse.FileType('w'), help='output file/stream')
         parser.add_argument('-sep', '--seperator', default='\t', help=r'i/o rows seperator, \t default')
         parser.add_argument('-ut', '--unittest', action='store_true', help='unit test')
-        parser.add_argument('-f', '--field_num', default=1, type=int, help='input content row number, 1 default')
+        parser.add_argument('-f', '--field_num', default=1, type=str, help='input content row number, 1 default')
         parser.add_argument('--skip_err_line', action='store_true', help='True: skip error line, False[default]: output "-"')
         self._add_cmd_args(parser)
 

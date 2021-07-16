@@ -73,7 +73,7 @@ class StrategyReportProcessor(StreamProcessor):
         label_names = self.cmd_args.get('label_names')
         assert len(self.y_actual_list) == len(self.y_predict_list), f'label_n[{len(self.y_actual_list)}] res_n[{len(self.y_predict_list)}] unmatch'
         report = metrics.classification_report(self.y_actual_list, self.y_predict_list, target_names=label_names, digits=4)
-        logging.info(report)
+        logging.debug(report)
         print(report, file=self.output_stream)
 
 
