@@ -29,6 +29,9 @@ class StreamProcessor(object):
         if self.cmd_args.get('skip_err_line', False):
             self.raise_line_error = True
             self.raise_row_error = True
+        field_num = self.cmd_args['field_num']
+        if isinstance(field_num, six.string_types) and field_num.isdigit():
+            self.cmd_args['field_num'] = int(field_num)
 
     # 行处理异常是否中断流处理(False时跳过该行，但不输出)，需要raise_row_error=Ture时生效
     raise_line_error = False
@@ -44,7 +47,7 @@ class StreamProcessor(object):
     output_convert = True
 
     def _output_convertor(self, text: str) -> str:
-        return text.replace('\n', r'\n').replace('\t', r'\t')
+        return text.replace('\n', r'\n').replace('\t', r'\t') if isinstance(text, six.string_types) else text
 
     def _before_process(self, *args, **kwargs):
         """
