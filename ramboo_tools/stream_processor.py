@@ -40,6 +40,11 @@ class StreamProcessor(object):
     fixed_column_width = 1
     # 是否保留原始输入列
     keep_input_rows = True
+    # 输出转义\t、\n
+    output_convert = True
+
+    def _output_convertor(self, text: str) -> str:
+        return text.replace('\n', r'\n').replace('\t', r'\t')
 
     def _before_process(self, *args, **kwargs):
         """
@@ -100,6 +105,8 @@ class StreamProcessor(object):
             res = temp[: self.fixed_column_width]
         output_rows = rows if self.keep_input_rows else []
         output_rows.extend(res)
+        if self.output_convert:
+            output_rows = map(self._output_convertor, output_rows)
         print(*output_rows, sep=self.separator, encoding=self.encoding, file=self.output_stream)
 
     def stream_process(self, *args, **kwargs):
