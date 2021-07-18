@@ -38,7 +38,7 @@ class StreamProcessor(object):
     # 列处理异常是否中断行处理(False时输出列处理结果默认值: rows_result_default * fixed_column_width)
     raise_row_error = False
     # 列处理结果默认值
-    rows_result_default = ['-']
+    rows_result_default = '-'
     # 输出列宽，结果将padding&裁剪至固定列宽，0表示不调整
     fixed_column_width = 1
     # 是否保留原始输入列
@@ -104,7 +104,7 @@ class StreamProcessor(object):
         if self.fixed_column_width > 0:
             if len(res) != self.fixed_column_width:
                 logging.debug(f'padding & fix result width from[{len(res)}] to[{self.fixed_column_width}]')
-            temp = list(res) + self.rows_result_default * self.fixed_column_width
+            temp = list(res) + [self.rows_result_default] * self.fixed_column_width
             res = temp[: self.fixed_column_width]
         output_rows = rows if self.keep_input_rows else []
         output_rows.extend(res)
@@ -181,3 +181,37 @@ class StreamProcessor(object):
         """
         text_list = [six.ensure_binary(text, encoding='utf-8') for text in self.unittest_text_list]
         self.stream_process(text_list, *args, **kwargs)
+
+
+class KVOutputStreamProcessor(StreamProcessor):
+    """
+    k/v输出类流处理器基类。该类处理共性：
+    * 结果输出key/value dict：-pk/--print_key 打印key，否则打印value
+    * 可定制化输出全部或部分key，-k/--output_keys 指定输出key
+    * 全部key输出不定长，部分key输出定长
+    """
+
+    fixed_column_width = 0
+
+    def __init__(self):
+        super().__init__()
+
+    def rows_process(self, rows, *objects, **kwargs):
+        output_keys = self.cmd_args.get('output_keys', None)
+        print_key = self.cmd_args.get('print_key', False)
+        output = self.kv_rows_process(rows, *objects, **kwargs)
+        if output_keys:
+            output = {key: output.get(key) for key in output_keys}
+            self.fixed_column_width = len(output_keys)
+        if print_key:
+            res = [f'{key}:{value}' for key, value in output.items()]
+        else:
+            res = list(output.values())
+        return res
+
+    def _add_cmd_args(self, parser):
+        """
+        添加命令行参数，子类可覆盖该方法并调用parser.add_argument()添加参数
+        """
+        parser.add_argument('-k', '--output_keys', action='append', help='output keys(append), all keys default')
+        parser.add_argument('-pk', '--print_key', action='store_true', help='whether to print key(<key:value> instead <value> only)')
