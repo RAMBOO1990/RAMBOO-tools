@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import logging
+import json
 from sklearn import metrics
 
 from ramboo_tools.stream_processor import StreamProcessor
@@ -30,25 +31,13 @@ class StrategyReportProcessor(StreamProcessor):
         parser.add_argument('-ps', '--predicts_skip', action='append', type=str, default=['-', 'error'], help='skip predict values (append)')
         parser.add_argument('-s', '--skip', type=str, default=[], help='common skip (as labels_skip & predicts_skip)')
         parser.add_argument('-l', '--label_names', action='append', type=str, help='label names(append)')
-        parser.add_argument('-d', '--need_detail', action='store_true', help='whether to print detail info')
+        parser.add_argument('-v', '--verbose', action='store_true', help='whether to print detail info')
 
     def _before_process(self, *args, **kwargs):
         self.y_actual_list = []
         self.y_predict_list = []
 
-    def rows_process(self, rows, *objects, **kwargs):
-        field_num = self.cmd_args.get('field_num', 1)
-        label = rows[field_num - 1]
-        predict_field_num = self.cmd_args.get('field_num_2', 2)
-        predict = rows[predict_field_num - 1]
-        label_target = self.cmd_args.get('label_target')
-        predict_target = self.cmd_args.get('predict_target')
-        skip = self.cmd_args.get('skip', [])
-        predicts_skip = self.cmd_args.get('predicts_skip', ['-', 'error'])
-        labels_skip = self.cmd_args.get('labels_skip', [])
-        predicts_skip += skip
-        labels_skip += skip
-        need_detail = self.cmd_args.get('need_detail', False)
+    def _convert_label_predict(self, label, predict, labels_skip, label_target, predicts_skip, predict_target):
         if label.lower() in labels_skip:
             return '-', '-'
         if label_target is not None:
@@ -63,18 +52,45 @@ class StrategyReportProcessor(StreamProcessor):
         else:
             predict = predict_target == predict
         predict = int(predict)
+        return label, predict
+
+    def rows_process(self, rows, *objects, **kwargs):
+        field_num = self.cmd_args.get('field_num', 1)
+        label = rows[field_num - 1]
+        predict_field_num = self.cmd_args.get('field_num_2', 2)
+        predict = rows[predict_field_num - 1]
+        label_target = self.cmd_args.get('label_target')
+        predict_target = self.cmd_args.get('predict_target')
+        skip = self.cmd_args.get('skip', [])
+        predicts_skip = self.cmd_args.get('predicts_skip', ['-', 'error'])
+        labels_skip = self.cmd_args.get('labels_skip', [])
+        predicts_skip += skip
+        labels_skip += skip
+        verbose = self.cmd_args.get('verbose', False)
+        try:
+            label, predict = self._convert_label_predict(label, predict, labels_skip, label_target, predicts_skip, predict_target)
+        except Exception:
+            if verbose:
+                raise
+            return None
         self.y_actual_list.append(label)
         self.y_predict_list.append(predict)
-        if need_detail:
+        if verbose:
             return label, predict
         return None
 
     def _after_process(self, *args, **kwargs):
         label_names = self.cmd_args.get('label_names')
         assert len(self.y_actual_list) == len(self.y_predict_list), f'label_n[{len(self.y_actual_list)}] res_n[{len(self.y_predict_list)}] unmatch'
-        report = metrics.classification_report(self.y_actual_list, self.y_predict_list, target_names=label_names, digits=4)
-        logging.debug(report)
-        print(report, file=self.output_stream)
+        report = metrics.classification_report(self.y_actual_list, self.y_predict_list, target_names=label_names, digits=4, output_dict=True)
+        for key, value in report.items():
+            if isinstance(value, dict) and 'precision' in value and 'recall' in value:
+                report[key]['precision'] = float('%.4f' % report[key]['precision'])
+                report[key]['recall'] = float('%.4f' % report[key]['recall'])
+        report = report.get('1', report)
+        report_json = json.dumps(report, indent=4)
+        logging.debug(report_json)
+        print(report_json, file=self.output_stream)
 
 
 def main():

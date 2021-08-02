@@ -204,7 +204,7 @@ class KVOutputStreamProcessor(StreamProcessor):
             output = {key: output.get(key) for key in output_keys}
             self.fixed_column_width = len(output_keys)
         if print_key:
-            res = [f'{key}:{value}' for key, value in output.items()]
+            res = [f'{key}({type(value).__name__}):{value}' for key, value in output.items()]
         else:
             res = list(output.values())
         return res
