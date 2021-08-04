@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import json
+from os import sep
 from sklearn import metrics
 
 from ramboo_tools.stream_processor import StreamProcessor
@@ -38,13 +39,11 @@ class StrategyReportProcessor(StreamProcessor):
         self.y_predict_list = []
 
     def _convert_label_predict(self, label, predict, labels_skip, label_target, predicts_skip, predict_target):
-        if label.lower() in labels_skip:
-            return '-', '-'
+        assert label.lower() not in labels_skip, f'skip label[{label.lower()}]'
         if label_target is not None:
             label = label == label_target
         label = int(label)
-        if predict.lower() in predicts_skip:
-            return label, '-'
+        assert predict.lower() not in predicts_skip, f'skip predict[{predict.lower()}]'
         if predict_target == 'len':
             predict = bool(len(predict))
         elif predict_target is None:
@@ -67,6 +66,8 @@ class StrategyReportProcessor(StreamProcessor):
         predicts_skip += skip
         labels_skip += skip
         verbose = self.cmd_args.get('verbose', False)
+        if not verbose:
+            self.raise_row_error = True
         try:
             label, predict = self._convert_label_predict(label, predict, labels_skip, label_target, predicts_skip, predict_target)
         except Exception:
@@ -82,15 +83,19 @@ class StrategyReportProcessor(StreamProcessor):
     def _after_process(self, *args, **kwargs):
         label_names = self.cmd_args.get('label_names')
         assert len(self.y_actual_list) == len(self.y_predict_list), f'label_n[{len(self.y_actual_list)}] res_n[{len(self.y_predict_list)}] unmatch'
-        report = metrics.classification_report(self.y_actual_list, self.y_predict_list, target_names=label_names, digits=4, output_dict=True)
-        for key, value in report.items():
-            if isinstance(value, dict) and 'precision' in value and 'recall' in value:
-                report[key]['precision'] = float('%.4f' % report[key]['precision'])
-                report[key]['recall'] = float('%.4f' % report[key]['recall'])
-        report = report.get('1', report)
-        report_json = json.dumps(report, indent=4)
-        logging.debug(report_json)
-        print(report_json, file=self.output_stream)
+        report_dict = metrics.classification_report(self.y_actual_list, self.y_predict_list, target_names=label_names, digits=4, output_dict=True)
+        logging.info(json.dumps(report_dict, indent=4))
+        # output precision / recall
+        pr_list = []
+        for classes, report in report_dict.items():
+            if classes in ['macro avg', 'weighted avg']:
+                continue
+            if isinstance(report, dict) and 'precision' in report and 'recall' in report:
+                precision = float('%.4f' % report['precision'])
+                recall = float('%.4f' % report['recall'])
+                logging.debug(f'label[{classes}] precision[{precision}] recall[{recall}]')
+                pr_list += [precision, recall]
+        print(*pr_list, sep='\t')
 
 
 def main():
