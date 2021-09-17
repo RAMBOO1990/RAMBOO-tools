@@ -84,7 +84,11 @@ class StrategyReportProcessor(StreamProcessor):
         label_names = self.cmd_args.get('label_names')
         assert len(self.y_actual_list) == len(self.y_predict_list), f'label_n[{len(self.y_actual_list)}] res_n[{len(self.y_predict_list)}] unmatch'
         report_dict = metrics.classification_report(self.y_actual_list, self.y_predict_list, target_names=label_names, digits=4, output_dict=True)
-        logging.info(json.dumps(report_dict, indent=4))
+        verbose = self.cmd_args.get('verbose', False)
+        if verbose:
+            logging.info(json.dumps(report_dict, indent=4))
+        else:
+            logging.debug(json.dumps(report_dict, indent=4))
         # output precision / recall
         pr_list = []
         for classes, report in report_dict.items():
