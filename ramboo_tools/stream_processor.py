@@ -209,9 +209,21 @@ class KVOutputStreamProcessor(StreamProcessor):
             res = list(output.values())
         return res
 
-    def _add_cmd_args(self, parser):
+    def get_cmd_args(self, return_dict=True):
         """
-        添加命令行参数，子类可覆盖该方法并调用parser.add_argument()添加参数
+        获取并转换命令行参数
         """
+        parser = argparse.ArgumentParser(description='stream processor')
+        parser.add_argument('-input', '--input_stream', default=sys.stdin, type=argparse.FileType('r'), help='input file/stream')
+        parser.add_argument('-output' '--output_stream', default=sys.stdout, type=argparse.FileType('w'), help='output file/stream')
+        parser.add_argument('-sep', '--separator', default='\t', help=r'i/o rows separator, \t default')
+        parser.add_argument('-ut', '--unittest', action='store_true', help='unit test')
+        parser.add_argument('-f', '--field_num', default=1, type=str, help='input content row number, 1 default')
+        parser.add_argument('--skip_err_line', action='store_true', help='True: skip error line, False[default]: output "-"')
         parser.add_argument('-k', '--output_keys', action='append', help='output keys(append), all keys default')
         parser.add_argument('-pk', '--print_key', action='store_true', help='whether to print key(<key:value> instead <value> only)')
+        self._add_cmd_args(parser)
+
+        args = parser.parse_args()
+        res = args.__dict__ if return_dict else args
+        return res
