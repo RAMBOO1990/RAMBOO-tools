@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 import logging
 import json
-from os import sep
 from sklearn import metrics
 
 from ramboo_tools.stream_processor import StreamProcessor
@@ -83,7 +82,14 @@ class StrategyReportProcessor(StreamProcessor):
     def _after_process(self, *args, **kwargs):
         label_names = self.cmd_args.get('label_names')
         assert len(self.y_actual_list) == len(self.y_predict_list), f'label_n[{len(self.y_actual_list)}] res_n[{len(self.y_predict_list)}] unmatch'
-        report_dict = metrics.classification_report(self.y_actual_list, self.y_predict_list, target_names=label_names, digits=4, output_dict=True)
+        report_dict = metrics.classification_report(
+            self.y_actual_list,
+            self.y_predict_list,
+            target_names=label_names,
+            digits=4,
+            output_dict=True,
+            zero_division=0,
+        )
         verbose = self.cmd_args.get('verbose', False)
         if verbose:
             logging.info(json.dumps(report_dict, indent=4))
