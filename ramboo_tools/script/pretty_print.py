@@ -15,10 +15,11 @@ class PrettyPrintStreamProcessor(StreamProcessor):
         self.field_num_separator = self.cmd_args.get('field_num_separator', ',')
 
     def rows_process(self, rows=None, *objects, **kwargs):
-        field_num_list = list(map(int, str(self.cmd_args.get('field_num', '1')).split(',')))
+        field_num_list = list(map(int, str(self.cmd_args.get('field_num', '1')).split(self.field_num_separator)))
+        fold = self.cmd_args.get('fold', True)
         for field_num in field_num_list:
             content = str(rows[field_num - 1])
-            rows[field_num - 1] = pp(content)
+            rows[field_num - 1] = pp(content, fold=fold)
         print(*rows, sep=self.separator, file=self.output_stream)
         return None
 
@@ -29,6 +30,7 @@ class PrettyPrintStreamProcessor(StreamProcessor):
         parser.add_argument(
             '-s', '--field_num_separator', default=',', type=str, help='separator for -f/--field_num, "," default (i.e: "," for "1,2,3")'
         )
+        parser.add_argument('--fold', action='store_true', help='wether to fold content over 30 lines')
 
 
 def main():
