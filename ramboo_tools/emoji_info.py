@@ -6,7 +6,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 
-safe_emoji_list = [
+charunlike_emoji_list = [
     '\u2600',
     '\u2601',
     '\u2614',
@@ -664,11 +664,11 @@ def is_emoji(uchar):
         return False
 
 
-def is_safe_emoji(uchar):
-    """判断一个unicode是否是"安全的"emoji，即不包含英文、数字等字符"""
-    return uchar in safe_emoji_list
+def is_charunlike_emoji(uchar):
+    """判断一个unicode是否是为非字符型emoji，即不包含英文、数字等字符"""
+    return uchar in charunlike_emoji_list
 
 
-def is_unsafe_emoji(uchar):
-    """判断一个unicode是否是"不安全"emoji"""
-    return is_emoji(uchar) and uchar not in safe_emoji_list
+def is_charlike_emoji(uchar):
+    """判断一个unicode是否是字符型emoji，即包含英文、数字等字符"""
+    return is_emoji(uchar) and uchar not in charunlike_emoji_list
