@@ -201,7 +201,7 @@ class KVOutputStreamProcessor(StreamProcessor):
         print_key = self.cmd_args.get('print_key', False)
         output = self.kv_rows_process(rows, *objects, **kwargs)
         if output_keys:
-            output = {key: output.get(key) for key in output_keys}
+            output = {key: output.get(key, self.rows_result_default) for key in output_keys}
             self.fixed_column_width = len(output_keys)
         if print_key:
             res = [f'{key}({type(value).__name__}):{value}' for key, value in output.items()]
