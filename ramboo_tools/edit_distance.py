@@ -26,12 +26,3 @@ def edit_dis(str1, str2):
             dp[i][j] = min(insertion, deletion, substitution)
     # print(dp)
     return dp[len1][len2]
-
-
-def main():
-    print(edit_dis('12345', '2223'))
-    print(edit_dis('扫拖机器人', '扫拖一体机器人'))
-
-
-if __name__ == '__main__':
-    main()
