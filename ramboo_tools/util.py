@@ -7,6 +7,7 @@ from __future__ import unicode_literals
 import os
 import sys
 import json
+from json.decoder import JSONDecodeError
 import time
 import random
 import hashlib
@@ -303,3 +304,29 @@ def time_log_func(level=logging.DEBUG):
         return wrapper
 
     return decorator
+
+
+def try_json_decode_str(json_str):
+    """
+    尝试解析json字符串
+    """
+    if not isinstance(json_str, str):
+        return json_str
+    try:
+        json_data = json.loads(json_str)
+        return json_data
+    except JSONDecodeError as error:
+        pass
+    return json_str
+
+
+def try_json_decode(json_str):
+    """
+    尝试解析json字符串
+    若解析结果为dict，递归尝试解析dict内所有json字符串
+    """
+    data = try_json_decode_str(json_str)
+    if isinstance(data, dict):
+        for key, value in data.items():
+            data[key] = try_json_decode(value)
+    return data
