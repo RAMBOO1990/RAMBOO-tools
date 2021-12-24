@@ -7,7 +7,7 @@ from ramboo_tools.pretty_printer import pp
 
 class PrettyPrintStreamProcessor(StreamProcessor):
     """
-    优雅的打印对象（主要对括号进行多行展开）
+    优雅的打印对象，对括号进行多行展开
     """
 
     def __init__(self):
@@ -34,8 +34,7 @@ class PrettyPrintStreamProcessor(StreamProcessor):
 
 
 def main():
-    processorObj = PrettyPrintStreamProcessor()
-    processorObj.stream_process()
+    PrettyPrintStreamProcessor().stream_process()
 
 
 if __name__ == '__main__':

@@ -79,8 +79,7 @@ class CutStreamProcessor(StreamProcessor):
 
 
 def main():
-    processorObj = CutStreamProcessor()
-    processorObj.stream_process()
+    CutStreamProcessor().stream_process()
 
 
 if __name__ == '__main__':

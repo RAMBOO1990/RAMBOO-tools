@@ -4,7 +4,7 @@
 """
 @Time    : 2018-06-06
 @Author  : RAMBOO
-@Desc    : txt转xls 使用pandas库实现
+@Desc    : txt转xls 基于pandas库
 """
 
 # 系统库
@@ -61,8 +61,7 @@ class TextToXlsStreamProcessor(StreamProcessor):
 
 
 def main():
-    processorObj = TextToXlsStreamProcessor()
-    processorObj.stream_process()
+    TextToXlsStreamProcessor().stream_process()
 
 
 if __name__ == '__main__':

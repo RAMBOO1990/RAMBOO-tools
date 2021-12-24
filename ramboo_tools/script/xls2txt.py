@@ -13,7 +13,8 @@ import pandas
 
 
 class XlsToTextStreamProcessor(object):
-    def convert(self, text):
+    @staticmethod
+    def convert(text):
         for str1, str2 in [
             ('\\', '\\\\'),
             ('\t', r'\t'),
@@ -36,7 +37,7 @@ class XlsToTextStreamProcessor(object):
         if self.input_excel == sys.stdin:
             raise TypeError('--input_excel must be file')
         if '.xls' not in self.input_excel.name:
-            raise ValueError('input exceel file name must be xxx.xls(x)')
+            raise ValueError('input excel file name must be xxx.xls(x)')
         data_frame = pandas.read_excel(self.input_excel.name, header=None)
         data_frame.fillna('', inplace=True)
         data_list = data_frame.to_records(index=False)
@@ -46,8 +47,7 @@ class XlsToTextStreamProcessor(object):
 
 
 def main():
-    processorObj = XlsToTextStreamProcessor()
-    processorObj.process()
+    XlsToTextStreamProcessor().process()
 
 
 if __name__ == '__main__':

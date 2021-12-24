@@ -109,8 +109,7 @@ class StrategyReportProcessor(StreamProcessor):
 
 
 def main():
-    processorObj = StrategyReportProcessor()
-    processorObj.stream_process()
+    StrategyReportProcessor().stream_process()
 
 
 if __name__ == '__main__':

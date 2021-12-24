@@ -26,8 +26,7 @@ class EditDistanceProcessor(StreamProcessor):
 
 
 def main():
-    processorObj = EditDistanceProcessor()
-    processorObj.stream_process()
+    EditDistanceProcessor().stream_process()
 
 
 if __name__ == '__main__':

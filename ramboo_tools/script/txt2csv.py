@@ -4,7 +4,7 @@
 """
 @Time    : 2018-08-02
 @Author  : RAMBOO
-@Desc    : csv转txt 使用csv库实现
+@Desc    : csv转txt 基于csv库
 """
 
 # 系统库
@@ -50,8 +50,7 @@ class TextToCsvStreamProcessor(StreamProcessor):
 
 
 def main():
-    processorObj = TextToCsvStreamProcessor()
-    processorObj.stream_process(**processorObj.get_cmd_args())
+    TextToCsvStreamProcessor().stream_process()
 
 
 if __name__ == '__main__':

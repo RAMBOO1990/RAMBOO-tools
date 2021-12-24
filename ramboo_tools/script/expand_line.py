@@ -40,8 +40,7 @@ class ExpandLineStreamProcessor(StreamProcessor):
 
 
 def main():
-    processorObj = ExpandLineStreamProcessor()
-    processorObj.stream_process()
+    ExpandLineStreamProcessor().stream_process()
 
 
 if __name__ == '__main__':

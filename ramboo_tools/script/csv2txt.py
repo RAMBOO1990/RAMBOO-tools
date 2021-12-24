@@ -4,7 +4,7 @@
 """
 @Time    : 2018-08-02
 @Author  : RAMBOO
-@Desc    : csv转txt 使用csv库实现
+@Desc    : csv转txt 基于csv库
 """
 
 # 系统库
@@ -39,7 +39,7 @@ class CsvToTextStreamProcessor(StreamProcessor):
 
     def _add_cmd_args(self, parser):
         parser.add_argument('-d', '--csv_delimiter', default=',', type=str, help='input csv delimiter')
-        parser.add_argument('-e', '--csv_encoding', default='utf-8', type=str, help='input csv encoding, gbk defalut')
+        parser.add_argument('-e', '--csv_encoding', default='utf-8', type=str, help='input csv encoding, utf-8 defalut')
         parser.add_argument(
             '--format',
             default='unix',
@@ -47,7 +47,8 @@ class CsvToTextStreamProcessor(StreamProcessor):
             help='csv format: ' + '/'.join(csv.list_dialects() + ['auto']) + ', unix default. "auto" only available using file input',
         )
 
-    def _convert(self, text):
+    @staticmethod
+    def _convert(text):
         for str1, str2 in [
             ('\\', '\\\\'),
             ('\t', r'\t'),
@@ -64,8 +65,7 @@ class CsvToTextStreamProcessor(StreamProcessor):
 
 
 def main():
-    processorObj = CsvToTextStreamProcessor()
-    processorObj.stream_process(**processorObj.get_cmd_args())
+    CsvToTextStreamProcessor().stream_process()
 
 
 if __name__ == '__main__':
