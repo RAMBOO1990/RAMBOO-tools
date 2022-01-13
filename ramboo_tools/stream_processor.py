@@ -196,7 +196,20 @@ class KVOutputStreamProcessor(StreamProcessor):
     def __init__(self):
         super().__init__()
 
+    def kv_rows_process(rows, *objects, **kwargs):
+        """
+        处理输入流一行的各列数据，得到dict结果
+        rows: 接收输入流一行的各列数据
+        *args, **kwargs: 接受其余参数
+        """
+        raise NotImplementedError('KVOutputStreamProcessor基类方法，需子类继承KVOutputStreamProcessor后实现')
+
     def rows_process(self, rows, *objects, **kwargs):
+        """
+        处理输入流一行的各列数据，返回结果将输出至输出流
+        rows: 接收输入流一行的各列数据
+        *args, **kwargs: 接受其余参数
+        """
         output_keys = self.cmd_args.get('output_keys', None)
         print_key = self.cmd_args.get('print_key', False)
         output = self.kv_rows_process(rows, *objects, **kwargs)
