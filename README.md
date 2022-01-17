@@ -3,7 +3,7 @@
 
 ## Install 安装
 ```sh
-pip install <code_path>
+pip install ramboo-tools
 ```
 
 ## Usage 用法
