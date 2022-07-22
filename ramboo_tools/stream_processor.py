@@ -29,9 +29,6 @@ class StreamProcessor(object):
         if self.cmd_args.get('skip_err_line', False):
             self.raise_line_error = True
             self.raise_row_error = True
-        field_num = self.cmd_args['field_num']
-        if isinstance(field_num, six.string_types) and field_num.isdigit():
-            self.cmd_args['field_num'] = int(field_num)
 
     # 行处理异常是否中断流处理(False时跳过该行，但不输出)，需要raise_row_error=Ture时生效
     raise_line_error = False
@@ -160,7 +157,8 @@ class StreamProcessor(object):
         parser.add_argument('-output' '--output_stream', default=sys.stdout, type=argparse.FileType('w'), help='output file/stream')
         parser.add_argument('-sep', '--separator', default='\t', help=r'i/o rows separator, \t default')
         parser.add_argument('-ut', '--unittest', action='store_true', help='unit test')
-        parser.add_argument('-f', '--field_num', default=1, type=str, help='input content row number, 1 default')
+        parser.add_argument('-f', '--field_num', default=1, type=int, help='input content row number, 1 default')
+        parser.add_argument('-f2', '--field_num_2', default=2, type=int, help='2nd input content row number, 2 default')
         parser.add_argument('--skip_err_line', action='store_true', help='True: skip error line, False[default]: output "-"')
         self._add_cmd_args(parser)
 
@@ -227,12 +225,15 @@ class KVOutputStreamProcessor(StreamProcessor):
         获取并转换命令行参数
         """
         parser = argparse.ArgumentParser(description='stream processor')
+        # StreamProcessor继承参数
         parser.add_argument('-input', '--input_stream', default=sys.stdin, type=argparse.FileType('r'), help='input file/stream')
         parser.add_argument('-output' '--output_stream', default=sys.stdout, type=argparse.FileType('w'), help='output file/stream')
         parser.add_argument('-sep', '--separator', default='\t', help=r'i/o rows separator, \t default')
         parser.add_argument('-ut', '--unittest', action='store_true', help='unit test')
-        parser.add_argument('-f', '--field_num', default=1, type=str, help='input content row number, 1 default')
+        parser.add_argument('-f', '--field_num', default=1, type=int, help='input content row number, 1 default')
+        parser.add_argument('-f2', '--field_num_2', default=2, type=int, help='2nd input content row number, 2 default')
         parser.add_argument('--skip_err_line', action='store_true', help='True: skip error line, False[default]: output "-"')
+        # KVOutputStreamProcessor额外参数
         parser.add_argument('-k', '--output_keys', action='append', help='output keys(append), all keys default')
         parser.add_argument('-pk', '--print_key', action='store_true', help='whether to print key(<key:value> instead <value> only)')
         self._add_cmd_args(parser)
