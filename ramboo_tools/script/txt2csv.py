@@ -44,7 +44,18 @@ class TextToCsvStreamProcessor(StreamProcessor):
         if header:
             self.csv_writer.writerow(header)
 
+    @staticmethod
+    def _convert(text):
+        for str1, str2 in [
+            ('\\\\', '\\'),
+            (r'\t', '\t'),
+            (r'\n', '\n'),
+        ]:
+            text = text.replace(str1, str2)
+        return text
+
     def rows_process(self, rows, *objects, **kwargs):
+        rows = list(map(self._convert, rows))
         self.csv_writer.writerow(rows)
         return None
 
