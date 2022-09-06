@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import json
+from typing import OrderedDict
 from sklearn import metrics
 
 from ramboo_tools.stream_processor import StreamProcessor
@@ -21,17 +22,16 @@ class StrategyReportProcessor(StreamProcessor):
         """
         添加命令行参数，子类可覆盖该方法并调用parser.add_argument()添加参数
         """
-        parser.add_argument('-f2', '--field_num_2', default=2, type=int, help='startegy res field num')
-        parser.add_argument('-lt', '--label_target', type=str, help='convert label to 0/1(match target or not)')
-        parser.add_argument(
-            '-pt', '--predict_target', type=str, help='convert res to 0/1(match target or not). <value>: res==value[default] / len: len(res)'
-        )
+        parser.add_argument('-lt', '--label_target', type=str, help='若有值，将label值转换为int(label==label_target)的0/1标签')
+        parser.add_argument('-pt', '--predict_target', type=str, help='若有值，将predict值转换为int(predict==predict_target)的0/1标签。若为len，转换为int(len(predict_target))')
         # parser.add_argument('-t', '--target', type=str, help='common target (as label_target & predict_target)')
         parser.add_argument('-ls', '--labels_skip', action='append', type=str, default=[], help='skip label values (append)')
         parser.add_argument('-ps', '--predicts_skip', action='append', type=str, default=['-', 'error'], help='skip predict values (append)')
         parser.add_argument('-s', '--skip', type=str, default=[], help='common skip (as labels_skip & predicts_skip)')
         parser.add_argument('-l', '--label_names', action='append', type=str, help='label names(append)')
         parser.add_argument('-v', '--verbose', action='store_true', help='whether to print detail info')
+        parser.add_argument('-k', '--output_keys', action='append', help='output keys(append), all keys default')
+        parser.add_argument('-pk', '--print_key', action='store_true', help='whether to print key(<key:value> instead <value> only)')
 
     def _before_process(self, *args, **kwargs):
         self.y_actual_list = []
@@ -96,16 +96,32 @@ class StrategyReportProcessor(StreamProcessor):
         else:
             logging.debug(json.dumps(report_dict, indent=4))
         # output precision / recall
-        pr_list = []
+        output = OrderedDict()
         for classes, report in report_dict.items():
             if classes in ['macro avg', 'weighted avg']:
                 continue
             if isinstance(report, dict) and 'precision' in report and 'recall' in report:
                 precision = float('%.4f' % report['precision'])
                 recall = float('%.4f' % report['recall'])
+                f1_score = float('%.4f' % report['f1-score'])
                 logging.debug(f'label[{classes}] precision[{precision}] recall[{recall}]')
-                pr_list += [precision, recall]
-        print(*pr_list, sep='\t')
+                output.update(
+                    {
+                        f"label-{classes}-precision": "{:.2%}".format(precision),
+                        f"label-{classes}-recall": "{:.2%}".format(recall),
+                        f"label-{classes}-f1_score": "{:.2%}".format(f1_score),
+                    }
+                )
+        output['accuracy'] = "{:.2%}".format(report_dict['accuracy'])
+        output_keys = self.cmd_args.get('output_keys')
+        if output_keys:
+            output = {key: output.get(key, self.rows_result_default) for key in output_keys}
+            self.fixed_column_width = len(output_keys)
+        if self.cmd_args.get('print_key'):
+            res = [f'{key}({type(value).__name__}):{value}' for key, value in output.items()]
+        else:
+            res = list(output.values())
+        print(*res, sep='\t')
 
 
 def main():
