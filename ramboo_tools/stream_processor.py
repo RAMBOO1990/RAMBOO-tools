@@ -159,6 +159,7 @@ class StreamProcessor(object):
         parser.add_argument('-ut', '--unittest', action='store_true', help='unit test')
         parser.add_argument('-f', '--field_num', default=1, type=int, help='input content row number, 1 default')
         parser.add_argument('-f2', '--field_num_2', default=2, type=int, help='2nd input content row number, 2 default')
+        parser.add_argument('-fl', '--field_num_list', action='append', type=int, help='input content row number list')
         parser.add_argument('--skip_err_line', action='store_true', help='True: skip error line, False[default]: output "-"')
         self._add_cmd_args(parser)
 
