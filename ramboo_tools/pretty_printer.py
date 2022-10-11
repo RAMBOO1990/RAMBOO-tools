@@ -9,7 +9,7 @@ class PrettyPrinter(object):
         self.right_brackets_ch = right_brackets_ch
         self.quotes_ch = quotes_ch
 
-    def str_format(self, obj, indent=4, fold=True, comma_count_th=30, keep_str=True):
+    def str_format(self, obj, indent=4, fold_line=30, keep_str=True):
         """
         indent: 缩进长度
         flod: 是否折叠(连续多行时隐藏comma_count_th行之后的数据)
@@ -40,8 +40,8 @@ class PrettyPrinter(object):
             if last_ch == ',' and ch == ' ':
                 last_ch = ch
                 continue
-            if fold:
-                if comma_count >= comma_count_th:
+            if fold_line > 0:
+                if comma_count >= fold_line:
                     if not_folding:
                         res += '(fold)...'
                     not_folding = False
