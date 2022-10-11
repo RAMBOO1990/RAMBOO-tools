@@ -65,7 +65,7 @@ def find_file(file_path, search_dir_list=None):
         search_path = full_path(file_path, search_dir)
         if os.path.exists(search_path):
             return search_path
-    raise ValueError('file not exists[%s]' % file_path)
+    raise FileNotFoundError('file not exists[%s]' % file_path)
 
 
 def get_file_obj(file_obj, mode='r', default=None):
@@ -330,3 +330,18 @@ def try_json_decode(json_str):
         for key, value in data.items():
             data[key] = try_json_decode(value)
     return data
+
+
+def convert_obj2dict(obj):
+    """
+    对象递归转换为dict
+    """
+    if hasattr(obj, "__dict__"):
+        obj = obj.__dict__
+    if isinstance(obj, dict):
+        for key, value in obj.items():
+            obj[key] = convert_obj2dict(value)
+    elif isinstance(obj, (list, tuple)):
+        for idx, item in enumerate(obj):
+            obj[idx] = convert_obj2dict(item)
+    return obj

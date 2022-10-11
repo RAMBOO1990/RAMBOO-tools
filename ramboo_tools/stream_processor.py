@@ -6,6 +6,7 @@ import argparse
 import logging
 
 import six
+from tqdm import tqdm
 
 from . import util
 from .util import print
@@ -129,6 +130,9 @@ class StreamProcessor(object):
 
         self._before_process(*args, **kwargs)
         self.line_count = 0
+        tqdm_total = self.cmd_args.get('tqdm_total')
+        if tqdm_total:
+            self.input_stream = tqdm(self.input_stream, total=tqdm_total)
         for line in self.input_stream:
             try:
                 self.line_process(line, *args, **kwargs)
@@ -142,9 +146,23 @@ class StreamProcessor(object):
         for file_to_close in close_file_list:
             file_to_close.close()
 
+    def _add_default_cmd_args(self, parser):
+        """
+        添加默认命令行参数
+        """
+        parser.add_argument('-input', '--input_stream', default=sys.stdin, type=argparse.FileType('r'), help='input file/stream')
+        parser.add_argument('-output' '--output_stream', default=sys.stdout, type=argparse.FileType('w'), help='output file/stream')
+        parser.add_argument('-sep', '--separator', default='\t', help=r'i/o rows separator, \t default')
+        parser.add_argument('-ut', '--unittest', action='store_true', help='unit test')
+        parser.add_argument('-f', '--field_num', default=1, type=int, help='input content row number, 1 default')
+        parser.add_argument('-f2', '--field_num_2', default=2, type=int, help='2nd input content row number, 2 default')
+        parser.add_argument('-fl', '--field_num_list', action='append', type=int, help='input content row number list')
+        parser.add_argument('-tqdm', '--tqdm_total', type=int, help='input content total num, used by tqdm')
+        parser.add_argument('--skip_err_line', action='store_true', help='True: skip error line, False[default]: output "-"')
+
     def _add_cmd_args(self, parser):
         """
-        添加命令行参数，子类可覆盖该方法并调用parser.add_argument()添加参数
+        添加自定义命令行参数，子类可覆盖该方法并调用parser.add_argument()添加参数
         """
         pass
 
@@ -153,14 +171,7 @@ class StreamProcessor(object):
         获取并转换命令行参数
         """
         parser = argparse.ArgumentParser(description='stream processor')
-        parser.add_argument('-input', '--input_stream', default=sys.stdin, type=argparse.FileType('r'), help='input file/stream')
-        parser.add_argument('-output' '--output_stream', default=sys.stdout, type=argparse.FileType('w'), help='output file/stream')
-        parser.add_argument('-sep', '--separator', default='\t', help=r'i/o rows separator, \t default')
-        parser.add_argument('-ut', '--unittest', action='store_true', help='unit test')
-        parser.add_argument('-f', '--field_num', default=1, type=int, help='input content row number, 1 default')
-        parser.add_argument('-f2', '--field_num_2', default=2, type=int, help='2nd input content row number, 2 default')
-        parser.add_argument('-fl', '--field_num_list', action='append', type=int, help='input content row number list')
-        parser.add_argument('--skip_err_line', action='store_true', help='True: skip error line, False[default]: output "-"')
+        self._add_default_cmd_args(parser)
         self._add_cmd_args(parser)
 
         args = parser.parse_args()
@@ -212,6 +223,7 @@ class KVOutputStreamProcessor(StreamProcessor):
         output_keys = self.cmd_args.get('output_keys', None)
         print_key = self.cmd_args.get('print_key', False)
         output = self.kv_rows_process(rows, *objects, **kwargs)
+        output = util.convert_obj2dict(output)
         if output_keys:
             output = {key: output.get(key, self.rows_result_default) for key in output_keys}
             self.fixed_column_width = len(output_keys)
@@ -221,24 +233,10 @@ class KVOutputStreamProcessor(StreamProcessor):
             res = list(output.values())
         return res
 
-    def get_cmd_args(self, return_dict=True):
+    def _add_default_cmd_args(self, parser):
         """
-        获取并转换命令行参数
+        添加默认命令行参数
         """
-        parser = argparse.ArgumentParser(description='stream processor')
-        # StreamProcessor继承参数
-        parser.add_argument('-input', '--input_stream', default=sys.stdin, type=argparse.FileType('r'), help='input file/stream')
-        parser.add_argument('-output' '--output_stream', default=sys.stdout, type=argparse.FileType('w'), help='output file/stream')
-        parser.add_argument('-sep', '--separator', default='\t', help=r'i/o rows separator, \t default')
-        parser.add_argument('-ut', '--unittest', action='store_true', help='unit test')
-        parser.add_argument('-f', '--field_num', default=1, type=int, help='input content row number, 1 default')
-        parser.add_argument('-f2', '--field_num_2', default=2, type=int, help='2nd input content row number, 2 default')
-        parser.add_argument('--skip_err_line', action='store_true', help='True: skip error line, False[default]: output "-"')
-        # KVOutputStreamProcessor额外参数
+        super()._add_default_cmd_args(parser)
         parser.add_argument('-k', '--output_keys', action='append', help='output keys(append), all keys default')
         parser.add_argument('-pk', '--print_key', action='store_true', help='whether to print key(<key:value> instead <value> only)')
-        self._add_cmd_args(parser)
-
-        args = parser.parse_args()
-        res = args.__dict__ if return_dict else args
-        return res

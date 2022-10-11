@@ -12,6 +12,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import unicode_literals
 import io
+import sys
 
 # 第三方库
 import six
@@ -19,6 +20,8 @@ import csv
 
 # 内部库
 from ramboo_tools.stream_processor import StreamProcessor
+
+csv.field_size_limit(sys.maxsize)
 
 
 class CsvToTextStreamProcessor(StreamProcessor):
