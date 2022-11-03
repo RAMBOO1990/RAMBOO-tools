@@ -107,12 +107,12 @@ class StrategyReportProcessor(StreamProcessor):
                 logging.debug(f'label[{classes}] precision[{precision}] recall[{recall}]')
                 output.update(
                     {
-                        f"label-{classes}-precision": "{:.2%}".format(precision),
-                        f"label-{classes}-recall": "{:.2%}".format(recall),
-                        f"label-{classes}-f1_score": "{:.2%}".format(f1_score),
+                        f"label-{classes}-precision": f"{precision:.2%}",
+                        f"label-{classes}-recall": f"{recall:.2%}",
+                        f"label-{classes}-f1_score": f"{f1_score:.2%}",
                     }
                 )
-        output['accuracy'] = "{:.2%}".format(report_dict['accuracy'])
+        output['accuracy'] = f"{report_dict['accuracy']:.2%}"
         output_keys = self.cmd_args.get('output_keys')
         if output_keys:
             output = {key: output.get(key, self.rows_result_default) for key in output_keys}

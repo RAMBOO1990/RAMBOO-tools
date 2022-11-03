@@ -65,7 +65,7 @@ def find_file(file_path, search_dir_list=None):
         search_path = full_path(file_path, search_dir)
         if os.path.exists(search_path):
             return search_path
-    raise FileNotFoundError('file not exists[%s]' % file_path)
+    raise FileNotFoundError(f'file not exists[{file_path}]')
 
 
 def get_file_obj(file_obj, mode='r', default=None):
@@ -76,15 +76,19 @@ def get_file_obj(file_obj, mode='r', default=None):
     default: 失败时返回的默认值
     return: 文件对象, 文件是否需要关闭(file_obj为路径时适用)
     """
+
+    def _is_file(file):
+        return hasattr(file_obj, 'read') or hasattr(file_obj, '__iter__')
+
     raw_file_obj = file_obj
     need_close = False
     if isinstance(file_obj, (six.binary_type, six.text_type)):
         file_obj = open(find_file(file_obj), mode)
         need_close = True
-    if not (hasattr(file_obj, 'read') or hasattr(file_obj, '__iter__')):
+    if not _is_file(file_obj):
         file_obj = default
-    if not (hasattr(file_obj, 'read') or hasattr(file_obj, '__iter__')):
-        raise ValueError('cannot open file[%s]' % raw_file_obj)
+    if not _is_file(file_obj):
+        raise ValueError(f'cannot open file[{raw_file_obj}]')
     return file_obj, need_close
 
 
