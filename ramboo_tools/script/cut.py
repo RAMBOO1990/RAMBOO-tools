@@ -31,7 +31,7 @@ class CutStreamProcessor(StreamProcessor):
         self.separator = self.cmd_args.get('delimiter')
         if self.separator is None:
             self.separator = self.cmd_args.get('separator', '\t')
-        field_num_raw = self.cmd_args.get('field_num', '1')
+        field_num_raw = self.cmd_args.get('field_num_str', '1')
         field_num_set = set()
         field_num_before = float('-inf')
         field_num_after = float('inf')
@@ -76,6 +76,7 @@ class CutStreamProcessor(StreamProcessor):
         添加命令行参数，子类可覆盖该方法并调用parser.add_argument()添加参数
         """
         parser.add_argument('-d', '--delimiter', type=str, help='separator of rows, same as -sep --seperator')
+        parser.add_argument('-fs', '--field_num_str', default='1', type=str, help='input content row number, 1 default')
 
 
 def main():
