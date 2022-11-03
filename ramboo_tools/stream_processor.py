@@ -4,6 +4,8 @@
 import sys
 import argparse
 import logging
+from concurrent.futures import ThreadPoolExecutor
+from threading import Lock
 
 import six
 from tqdm import tqdm
@@ -30,6 +32,10 @@ class StreamProcessor(object):
         if self.cmd_args.get('skip_err_line', False):
             self.raise_line_error = True
             self.raise_row_error = True
+        self.multi_thread = self.cmd_args.get('multi_thread')
+        if self.multi_thread:
+            self.executor = ThreadPoolExecutor(max_workers=self.multi_thread)
+            self.print_lock = Lock()
 
     # 行处理异常是否中断流处理(False时跳过该行，但不输出)，需要raise_row_error=Ture时生效
     raise_line_error = False
@@ -108,7 +114,11 @@ class StreamProcessor(object):
         output_rows.extend(res)
         if self.output_convert:
             output_rows = map(self._output_convertor, output_rows)
-        print(*output_rows, sep=self.separator, encoding=self.encoding, file=self.output_stream)
+        if self.multi_thread:
+            with self.print_lock:
+                print(*output_rows, sep=self.separator, encoding=self.encoding, file=self.output_stream)
+        else:
+            print(*output_rows, sep=self.separator, encoding=self.encoding, file=self.output_stream)
 
     def stream_process(self, *args, **kwargs):
         """
@@ -133,15 +143,18 @@ class StreamProcessor(object):
         tqdm_total = self.cmd_args.get('tqdm_total')
         if tqdm_total:
             self.input_stream = tqdm(self.input_stream, total=tqdm_total)
-        for line in self.input_stream:
-            try:
-                self.line_process(line, *args, **kwargs)
-            except Exception as error:
-                logging.exception(f'line_no[{self.line_count}] line:{line} error[{error}]')
-                if self.raise_line_error:
-                    raise
-                else:
-                    continue
+        if self.multi_thread:
+            self.executor.map(self.line_process, self.input_stream)
+        else:
+            for line in self.input_stream:
+                try:
+                    self.line_process(line, *args, **kwargs)
+                except Exception as error:
+                    logging.exception(f'line_no[{self.line_count}] line:{line} error[{error}]')
+                    if self.raise_line_error:
+                        raise
+                    else:
+                        continue
         self._after_process(*args, **kwargs)
         for file_to_close in close_file_list:
             file_to_close.close()
@@ -159,6 +172,7 @@ class StreamProcessor(object):
         parser.add_argument('-fl', '--field_num_list', action='append', type=int, help='input content row number list')
         parser.add_argument('-tqdm', '--tqdm_total', type=int, help='input content total num, used by tqdm')
         parser.add_argument('--skip_err_line', action='store_true', help='True: skip error line, False[default]: output "-"')
+        parser.add_argument('-mt', '--multi_thread', default=0, type=int, help='use multi thread process each line, 0 means no multi thread, >0 value means max_workers')
 
     def _add_cmd_args(self, parser):
         """
