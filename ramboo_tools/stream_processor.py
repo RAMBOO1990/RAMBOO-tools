@@ -33,9 +33,6 @@ class StreamProcessor(object):
             self.raise_line_error = True
             self.raise_row_error = True
         self.multi_thread = self.cmd_args.get('multi_thread')
-        if self.multi_thread:
-            self.executor = ThreadPoolExecutor(max_workers=self.multi_thread)
-            self.print_lock = Lock()
 
     # 行处理异常是否中断流处理(False时跳过该行，但不输出)，需要raise_row_error=Ture时生效
     raise_line_error = False
@@ -113,12 +110,8 @@ class StreamProcessor(object):
         output_rows = rows if self.keep_input_rows else []
         output_rows.extend(res)
         if self.output_convert:
-            output_rows = map(self._output_convertor, output_rows)
-        if self.multi_thread:
-            with self.print_lock:
-                print(*output_rows, sep=self.separator, encoding=self.encoding, file=self.output_stream)
-        else:
-            print(*output_rows, sep=self.separator, encoding=self.encoding, file=self.output_stream)
+            output_rows = list(map(self._output_convertor, output_rows))
+        return output_rows
 
     def stream_process(self, *args, **kwargs):
         """
@@ -144,11 +137,16 @@ class StreamProcessor(object):
         if tqdm_total:
             self.input_stream = tqdm(self.input_stream, total=tqdm_total)
         if self.multi_thread:
-            self.executor.map(self.line_process, self.input_stream)
+            with ThreadPoolExecutor(max_workers=self.multi_thread) as executor:
+                for output_rows in executor.map(self.line_process, self.input_stream):
+                    if output_rows:
+                        print(*output_rows, sep=self.separator, encoding=self.encoding, file=self.output_stream)
         else:
             for line in self.input_stream:
                 try:
-                    self.line_process(line, *args, **kwargs)
+                    output_rows = self.line_process(line, *args, **kwargs)
+                    if output_rows:
+                        print(*output_rows, sep=self.separator, encoding=self.encoding, file=self.output_stream)
                 except Exception as error:
                     logging.exception(f'line_no[{self.line_count}] line:{line} error[{error}]')
                     if self.raise_line_error:
