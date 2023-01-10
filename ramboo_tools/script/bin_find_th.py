@@ -75,7 +75,8 @@ class BinaryFindThresholdProcessor(StreamProcessor):
             return label, score
         return None
 
-    def _get_pr_by_class(self, label_list, score_list, threshold, target_class='1'):
+    @staticmethod
+    def _get_pr_by_class(label_list, score_list, threshold, target_class='1'):
         predict_list = [int(score > threshold) for score in score_list]
         report_dict = metrics.classification_report(
             label_list,
@@ -91,24 +92,24 @@ class BinaryFindThresholdProcessor(StreamProcessor):
         f1_score = float('%.4f' % report['f1-score'])
         return precision, recall
 
-    # 迭代次数上限
-    STEP_LIMIT = 30
-    # 目标准召误差上限
-    ERROR_RANGE_LIMIT = 1e-3
-
-    def bin_find_th(self, label_list, score_list, target_type, target_value):
+    @staticmethod
+    def bin_find_th(label_list, score_list, target_type='precision', target_value=0.85, step_limit=30, error_range_limit=1e-3):
+        """
+        step_limit 迭代次数上限
+        error_range_limit目标准召误差上限
+        """
         flag = -1 if target_type == 'precision' else 1
         left, right = 0, 1
-        for step in range(self.STEP_LIMIT):
+        for step in range(step_limit):
             current_th = float(left + right) / 2
             # 计算当前阈值下指标
-            precision, recall = self._get_pr_by_class(label_list, score_list, current_th)
-            logging_fun = logging.info if self.cmd_args.get('verbose', False) else logging.debug
-            logging_fun(f'bin_find_th: current_th[{current_th}] left[{left}] right[{right}] precision[{precision}] recall[{recall}]')
+            precision, recall = BinaryFindThresholdProcessor._get_pr_by_class(label_list, score_list, current_th)
+            # logging_fun = logging.info if self.cmd_args.get('verbose', False) else logging.debug
+            # logging_fun(f'bin_find_th: current_th[{current_th}] left[{left}] right[{right}] precision[{precision}] recall[{recall}]')
             current_value = precision if target_type == 'precision' else recall
             # 迭代阈值
             error_value = fabs(current_value - target_value)
-            if error_value < self.ERROR_RANGE_LIMIT:
+            if error_value < error_range_limit:
                 return current_th
             if (current_value - target_value) * flag > 0:
                 # 提高准确，降低召回，阈值增加
@@ -116,7 +117,7 @@ class BinaryFindThresholdProcessor(StreamProcessor):
             else:
                 # 降低准确，提高召回，阈值减小
                 right = current_th
-        logging.warning(f'cannot find best threshold for target in {self.STEP_LIMIT} steps, error_value[{error_value}]')
+        logging.warning(f'cannot find best threshold for target in {step_limit} steps, error_value[{error_value}]')
         return current_th
 
     def _after_process(self, *args, **kwargs):
@@ -145,12 +146,14 @@ class BinaryFindThresholdProcessor(StreamProcessor):
                 precision = float('%.4f' % report['precision'])
                 recall = float('%.4f' % report['recall'])
                 f1_score = float('%.4f' % report['f1-score'])
-                logging.debug(f'label[{classes}] precision[{precision}] recall[{recall}]')
+                support = int(report['support'])
+                logging.debug(f'label[{classes}] precision[{precision}] recall[{recall}] support[{support}]')
                 output.update(
                     {
                         f"label-{classes}-precision": f"{precision:.2%}",
                         f"label-{classes}-recall": f"{recall:.2%}",
                         f"label-{classes}-f1_score": f"{f1_score:.2%}",
+                        f"label-{classes}-support": f"{support}",
                     }
                 )
         output['accuracy'] = f"{report_dict['accuracy']:.2%}"
