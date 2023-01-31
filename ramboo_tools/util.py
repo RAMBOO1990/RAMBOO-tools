@@ -14,6 +14,7 @@ import hashlib
 import math
 import functools
 import logging
+from typing import OrderedDict
 
 
 # 第三方库
@@ -77,7 +78,7 @@ def get_file_obj(file_obj, mode='r', default=None):
     return: 文件对象, 文件是否需要关闭(file_obj为路径时适用)
     """
 
-    def _is_file(file):
+    def _is_file(file_obj):
         return hasattr(file_obj, 'read') or hasattr(file_obj, '__iter__')
 
     raw_file_obj = file_obj
@@ -349,3 +350,29 @@ def convert_obj2dict(obj):
         for idx, item in enumerate(obj):
             obj[idx] = convert_obj2dict(item)
     return obj
+
+
+def convert_report_dict(report_dict: dict):
+    """
+    转换sklearn的classification_report为自用格式
+    """
+    output = OrderedDict()
+    for classes, report in report_dict.items():
+        if classes in ['macro avg', 'weighted avg']:
+            continue
+        if isinstance(report, dict) and 'precision' in report and 'recall' in report:
+            precision = float('%.4f' % report['precision'])
+            recall = float('%.4f' % report['recall'])
+            f1_score = float('%.4f' % report['f1-score'])
+            support = int(report['support'])
+            logging.debug(f'label[{classes}] precision[{precision}] recall[{recall}] support[{support}]')
+            output.update(
+                {
+                    f"label-{classes}-precision": f"{precision:.2%}",
+                    f"label-{classes}-recall": f"{recall:.2%}",
+                    f"label-{classes}-f1_score": f"{f1_score:.2%}",
+                    f"label-{classes}-support": f"{support}",
+                }
+            )
+    output['accuracy'] = f"{report_dict['accuracy']:.2%}"
+    return output

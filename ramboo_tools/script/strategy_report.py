@@ -6,6 +6,7 @@ from typing import OrderedDict
 from sklearn import metrics
 
 from ramboo_tools.stream_processor import StreamProcessor
+from ramboo_tools.util import convert_report_dict
 
 
 class StrategyReportProcessor(StreamProcessor):
@@ -96,23 +97,7 @@ class StrategyReportProcessor(StreamProcessor):
         else:
             logging.debug(json.dumps(report_dict, indent=4))
         # output precision / recall
-        output = OrderedDict()
-        for classes, report in report_dict.items():
-            if classes in ['macro avg', 'weighted avg']:
-                continue
-            if isinstance(report, dict) and 'precision' in report and 'recall' in report:
-                precision = float('%.4f' % report['precision'])
-                recall = float('%.4f' % report['recall'])
-                f1_score = float('%.4f' % report['f1-score'])
-                logging.debug(f'label[{classes}] precision[{precision}] recall[{recall}]')
-                output.update(
-                    {
-                        f"label-{classes}-precision": f"{precision:.2%}",
-                        f"label-{classes}-recall": f"{recall:.2%}",
-                        f"label-{classes}-f1_score": f"{f1_score:.2%}",
-                    }
-                )
-        output['accuracy'] = f"{report_dict['accuracy']:.2%}"
+        output = convert_report_dict(report_dict)
         output_keys = self.cmd_args.get('output_keys')
         if output_keys:
             output = {key: output.get(key, self.rows_result_default) for key in output_keys}

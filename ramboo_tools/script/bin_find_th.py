@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 import logging
 import json
-from typing import OrderedDict
 from math import fabs
 from sklearn import metrics
 
 from ramboo_tools.stream_processor import StreamProcessor
+from ramboo_tools.util import convert_report_dict
 
 
 class BinaryFindThresholdProcessor(StreamProcessor):
@@ -138,25 +138,7 @@ class BinaryFindThresholdProcessor(StreamProcessor):
         logging_fun = logging.info if self.cmd_args.get('verbose', False) else logging.debug
         logging_fun(json.dumps(report_dict, indent=4))
         # output precision / recall
-        output = OrderedDict()
-        for classes, report in report_dict.items():
-            if classes in ['macro avg', 'weighted avg']:
-                continue
-            if isinstance(report, dict) and 'precision' in report and 'recall' in report:
-                precision = float('%.4f' % report['precision'])
-                recall = float('%.4f' % report['recall'])
-                f1_score = float('%.4f' % report['f1-score'])
-                support = int(report['support'])
-                logging.debug(f'label[{classes}] precision[{precision}] recall[{recall}] support[{support}]')
-                output.update(
-                    {
-                        f"label-{classes}-precision": f"{precision:.2%}",
-                        f"label-{classes}-recall": f"{recall:.2%}",
-                        f"label-{classes}-f1_score": f"{f1_score:.2%}",
-                        f"label-{classes}-support": f"{support}",
-                    }
-                )
-        output['accuracy'] = f"{report_dict['accuracy']:.2%}"
+        output = convert_report_dict(report_dict)
         output['th'] = threshold
         output_keys = self.cmd_args.get('output_keys')
         if output_keys:
