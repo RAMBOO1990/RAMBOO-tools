@@ -214,6 +214,7 @@ class KVOutputStreamProcessor(StreamProcessor):
     """
 
     fixed_column_width = 0
+    _default_keys = None
 
     def __init__(self):
         super().__init__()
@@ -232,7 +233,7 @@ class KVOutputStreamProcessor(StreamProcessor):
         rows: 接收输入流一行的各列数据
         *args, **kwargs: 接受其余参数
         """
-        output_keys = self.cmd_args.get('output_keys', None)
+        output_keys = self.cmd_args.get('output_keys') or self._default_keys
         print_key = self.cmd_args.get('print_key', False)
         output = self.kv_rows_process(rows, *objects, **kwargs)
         output = util.convert_obj2dict(output)
