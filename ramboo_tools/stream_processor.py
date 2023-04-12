@@ -77,12 +77,13 @@ class StreamProcessor(object):
         处理输入流一行的各列数据，返回结果将输出至输出流
         rows: 接收输入流一行的各列数据
         *args, **kwargs: 接受其余参数
+        return: 返回None时不输出本行，返回[]时不额外输出列
         """
         raise NotImplementedError('StreamProcessor基类方法，需子类继承StreamProcessor后实现')
 
     def line_process(self, line, *args, **kwargs):
         """
-        输入流一行数据才分为列数据，调用rows_process()处理，输出至输出流
+        输入流一行数据拆分为多列数据，调用rows_process()处理，输出至输出流
         line: 接收输入流一行数据
         *args, **kwargs: 接受其余参数
         """
@@ -98,6 +99,7 @@ class StreamProcessor(object):
                 raise
             else:
                 res = []
+        # 返回None时不输出本行，返回[]时不额外输出列
         if res is None:
             return
         if not isinstance(res, (list, tuple)):
