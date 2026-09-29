@@ -12,7 +12,7 @@ class PrettyPrinter(object):
     def str_format(self, obj, indent=4, fold_line=30, keep_str=True):
         """
         indent: 缩进长度
-        flod: 是否折叠(连续多行时隐藏comma_count_th行之后的数据)
+        fold: 是否折叠(连续多行时隐藏comma_count_th行之后的数据)
         keep_str: 是否保持字符串原格式
         """
         res = ''
